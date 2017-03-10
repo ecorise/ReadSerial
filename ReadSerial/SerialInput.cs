@@ -1,11 +1,10 @@
 ﻿using System;
 using System.IO.Ports;
 using System.Text;
-using System.Threading;
 
 namespace Ecorise.Equipment.SerialInput
 {
-    public class SerialInputEventArgs
+    public class SerialInputEventArgs : EventArgs
     {
         public SerialInputEventArgs(string s) { Text = s; }
         public String Text { get; private set; }
@@ -13,7 +12,6 @@ namespace Ecorise.Equipment.SerialInput
 
     public class SerialInputDevice : IDisposable
     {
-
         protected SerialPort serialPort;
         protected StringBuilder sb;
         public delegate void LineReceivedDelegate(object sender, SerialInputEventArgs e);
@@ -34,12 +32,15 @@ namespace Ecorise.Equipment.SerialInput
 
             sb.Clear();
 
-            serialPort = new SerialPort(serialPortName);
-            serialPort.BaudRate = 9600;
-            serialPort.Parity = Parity.None;
-            serialPort.DataBits = 8;
-            serialPort.StopBits = StopBits.One;
-            serialPort.ReadTimeout = 0;
+            serialPort = new SerialPort(serialPortName)
+            {
+                BaudRate = 9600,
+                Parity = Parity.None,
+                DataBits = 8,
+                StopBits = StopBits.One,
+                ReadTimeout = 0
+            };
+
             serialPort.DataReceived += new SerialDataReceivedEventHandler(SerialPortDataReceived);
             serialPort.Open();
         }

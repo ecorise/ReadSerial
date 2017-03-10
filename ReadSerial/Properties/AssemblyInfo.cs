@@ -1,11 +1,11 @@
 ﻿using System.Reflection;
 using System.Runtime.InteropServices;
 
-[assembly: AssemblyTitle("ModBusMaster")]
+[assembly: AssemblyTitle("ReadSerial")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("ModBusMaster")]
+[assembly: AssemblyProduct("ReadSerial")]
 [assembly: AssemblyCopyright("Copyright © Ecorise 2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

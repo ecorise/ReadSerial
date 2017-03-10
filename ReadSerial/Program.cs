@@ -1,8 +1,8 @@
-﻿using Ecorise.Equipment.SerialInput;
-using Ecorise.Utils;
-using System;
+﻿using System;
 using System.Text;
 using System.Threading;
+using Ecorise.Equipment.SerialInput;
+using Ecorise.Utils;
 
 namespace ReadSerial
 {

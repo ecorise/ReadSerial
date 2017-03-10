@@ -11,7 +11,7 @@ namespace Ecorise.Utils
         public string LogFilePath;
         public DateTime nextFileCreationTime;
 
-        public Logger(string prefix = "log")
+        public Logger(string prefix)
         {
             filenamePrefix = prefix;
             CreateNewFileNow();
