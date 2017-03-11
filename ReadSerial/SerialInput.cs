@@ -13,94 +13,107 @@ namespace Ecorise.Equipment.SerialInput
     public class SerialInputDevice : IDisposable
     {
         protected SerialPort serialPort;
+        private string portName;
         protected StringBuilder sb;
-        public delegate void LineReceivedDelegate(object sender, SerialInputEventArgs e);
-        public event LineReceivedDelegate LineReceived;
+        public event EventHandler<SerialInputEventArgs> LineReceived;
 
         public SerialInputDevice()
         {
-            serialPort = null;
             sb = new StringBuilder(2000);
         }
 
-        public void Open(string serialPortName)
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Reliability", "CA2000:Supprimer les objets avant la mise hors de portée")]
+        public bool Open(string serialPortName)
         {
-            if (IsOpen)
+            if (IsOpen && (serialPortName != portName))
             {
                 Close();
             }
 
+            portName = serialPortName;
             sb.Clear();
 
-            serialPort = new SerialPort(serialPortName)
+            try
             {
-                BaudRate = 9600,
-                Parity = Parity.None,
-                DataBits = 8,
-                StopBits = StopBits.One,
-                ReadTimeout = 0
-            };
+                serialPort = new SerialPort(serialPortName)
+                {
+                    BaudRate = 9600,
+                    Parity = Parity.None,
+                    DataBits = 8,
+                    StopBits = StopBits.One,
+                    ReadTimeout = 500
+                };
 
-            serialPort.DataReceived += new SerialDataReceivedEventHandler(SerialPortDataReceived);
-            serialPort.Open();
+                serialPort.DataReceived += SerialPortDataReceived;
+
+                serialPort.Open();
+            }
+            catch (System.IO.IOException)
+            {
+                // Ignore "com port does not exist"
+                serialPort.Dispose();
+                serialPort = null;
+                return false;
+            }
+
+            return serialPort.IsOpen;
+        }
+
+        protected void Reopen()
+        {
+            Close();
+            Open(portName);
         }
 
         public void Close()
         {
             if (serialPort != null)
             {
-                serialPort.DataReceived -= new SerialDataReceivedEventHandler(SerialPortDataReceived);
+                serialPort.DataReceived -= SerialPortDataReceived;
                 serialPort.Close();
                 serialPort = null;
             }
         }
 
-        public bool IsOpen
-        {
-            get
-            {
-                return (serialPort != null) ? serialPort.IsOpen : false;
-            }
-        }
-
-        public SerialPort ComPort
-        {
-            get
-            {
-                return serialPort;
-            }
-
-            set
-            {
-                if (serialPort != value)
-                {
-                    Close();
-                    serialPort = value;
-                }
-            }
-        }
+        public bool IsOpen => (serialPort != null) ? serialPort.IsOpen : false;
 
         private void SerialPortDataReceived(object sender, SerialDataReceivedEventArgs e)
         {
             while (serialPort.BytesToRead > 0)
             {
-                int ch = serialPort.ReadChar();
-
-                if ((ch != '\r') && (ch != '\n'))
+                try
                 {
-                    sb.Append((char)ch);
+                    int ch = serialPort.ReadChar();
+
+                    if ((ch != '\r') && (ch != '\n'))
+                    {
+                        sb.Append((char)ch);
+                    }
+
+                    if (ch == '\n')
+                    {
+                        LineReceived?.Invoke(this, new SerialInputEventArgs(sb.ToString()));
+                        sb.Clear();
+                    }
                 }
-
-                if (ch == '\n')
+                catch (InvalidOperationException)
                 {
-                    LineReceived?.Invoke(this, new SerialInputEventArgs(sb.ToString()));
-                    sb.Clear();
+                    // Port closed
+                    try
+                    {
+                        Reopen();
+                    }
+                    catch (InvalidOperationException)
+                    {
+                        // Ignore "com port does not exist"
+                        return;
+                    }
                 }
             }
         }
 
         #region IDisposable Support
-        private bool disposedValue = false; // Pour detecter les appels redondants
+        private bool disposedValue = false;
 
         protected virtual void Dispose(bool disposing)
         {
@@ -108,7 +121,9 @@ namespace Ecorise.Equipment.SerialInput
             {
                 if (disposing)
                 {
-                    serialPort.Dispose();
+                    serialPort?.Close();
+                    portName = null;
+                    LineReceived = null;
                 }
 
                 disposedValue = true;
@@ -118,6 +133,7 @@ namespace Ecorise.Equipment.SerialInput
         public void Dispose()
         {
             Dispose(true);
+            GC.SuppressFinalize(this);
         }
         #endregion
     }
