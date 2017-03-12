@@ -83,7 +83,7 @@ namespace ReadSerial
         public void SerialLineReceived(object sender, SerialInputEventArgs e)
         {
             log.LogDateTime(DateTime.UtcNow);
-            log.Log("\t{0}", e.Text);
+            log.Log("\t{0}\n", e.Text);
         }
 
         public static void Main()
